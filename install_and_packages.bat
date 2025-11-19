@@ -3,11 +3,11 @@ setlocal EnableDelayedExpansion
 
 echo.
 echo ############################################################
-echo #        YouTube to MP3 Converter - FFmpeg Path Setup       #
+echo #        YouTube to MP3 Converter - FFmpeg Auto-Setup       #
 echo ############################################################
 echo.
 echo This script will:
-echo   1. Locate your FFmpeg installation (from your screenshot)
+echo   1. Search for your FFmpeg installation automatically
 echo   2. Add it to system PATH so yt2mp3.exe can use it
 echo.
 echo Please run this script as Administrator.
@@ -35,24 +35,70 @@ if not exist "%SCRIPT_DIR%yt2mp3.exe" (
     exit /b 1
 )
 
-REM Set the exact FFmpeg bin path from your screenshot
-set "FFMPEG_BIN_PATH=C:\path\to\ffmpeg-2025-11-17-git-e94439e49b-essentials_build\bin"
+REM Search for FFmpeg folder pattern
+echo Searching for FFmpeg installation...
+set "FFMPEG_PATH="
 
-REM Verify ffmpeg.exe exists at that location
-if not exist "%FFMPEG_BIN_PATH%\ffmpeg.exe" (
-    echo ERROR: FFmpeg not found at expected location:
-    echo   %FFMPEG_BIN_PATH%
-    echo.
-    echo Please edit this script and update the FFMPEG_BIN_PATH variable
-    echo to point to your actual FFmpeg bin folder.
-    echo.
-    pause
-    exit /b 1
+REM Search in common locations for the git-essentials pattern
+for /f "tokens=*" %%i in ('dir /ad /b "C:\ffmpeg*" 2^>nul') do (
+    if exist "C:\%%i\bin\ffmpeg.exe" (
+        set "FFMPEG_PATH=C:\%%i\bin"
+        goto :found_ffmpeg
+    )
 )
+
+REM Search in Program Files
+for /f "tokens=*" %%i in ('dir /ad /b "C:\Program Files\ffmpeg*" 2^>nul') do (
+    if exist "C:\Program Files\%%i\bin\ffmpeg.exe" (
+        set "FFMPEG_PATH=C:\Program Files\%%i\bin"
+        goto :found_ffmpeg
+    )
+)
+
+REM Search in Program Files (x86)
+for /f "tokens=*" %%i in ('dir /ad /b "C:\Program Files (x86)\ffmpeg*" 2^>nul') do (
+    if exist "C:\Program Files (x86)\%%i\bin\ffmpeg.exe" (
+        set "FFMPEG_PATH=C:\Program Files (x86)\%%i\bin"
+        goto :found_ffmpeg
+    )
+)
+
+REM Search in user's Desktop, Downloads, Documents
+for /f "tokens=*" %%i in ('dir /ad /b "%USERPROFILE%\Desktop\ffmpeg*" 2^>nul') do (
+    if exist "%USERPROFILE%\Desktop\%%i\bin\ffmpeg.exe" (
+        set "FFMPEG_PATH=%USERPROFILE%\Desktop\%%i\bin"
+        goto :found_ffmpeg
+    )
+)
+
+for /f "tokens=*" %%i in ('dir /ad /b "%USERPROFILE%\Downloads\ffmpeg*" 2^>nul') do (
+    if exist "%USERPROFILE%\Downloads\%%i\bin\ffmpeg.exe" (
+        set "FFMPEG_PATH=%USERPROFILE%\Downloads\%%i\bin"
+        goto :found_ffmpeg
+    )
+)
+
+for /f "tokens=*" %%i in ('dir /ad /b "%USERPROFILE%\Documents\ffmpeg*" 2^>nul') do (
+    if exist "%USERPROFILE%\Documents\%%i\bin\ffmpeg.exe" (
+        set "FFMPEG_PATH=%USERPROFILE%\Documents\%%i\bin"
+        goto :found_ffmpeg
+    )
+)
+
+echo.
+echo ERROR: FFmpeg installation not found automatically.
+echo Please ensure you have FFmpeg installed with a name like:
+echo   ffmpeg-YYYY-MM-DD-git-XXXXXXXX-essentials_build
+echo.
+pause
+exit /b 1
+
+:found_ffmpeg
+echo Found FFmpeg at: !FFMPEG_PATH!
 
 REM Add FFmpeg to system PATH
 echo Adding FFmpeg to system PATH...
-setx PATH "%PATH%;%FFMPEG_BIN_PATH%" /M >nul 2>&1
+setx PATH "%PATH%;!FFMPEG_PATH!" /M >nul 2>&1
 if %errorlevel% neq 0 (
     echo ERROR: Failed to add FFmpeg to system PATH
     pause
